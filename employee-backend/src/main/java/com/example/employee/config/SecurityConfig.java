@@ -38,7 +38,8 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/auth/**", "/actuator/**", "/h2-console/**").permitAll()
+                .requestMatchers("/api/auth/**").permitAll()          // login/register/profile actions
+                .requestMatchers("/actuator/**", "/h2-console/**").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
@@ -51,26 +52,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
-
-        // Local development origins — add your current frontend origin(s)
-        cfg.setAllowedOrigins(List.of(
-            "http://localhost:3000",
-            "http://127.0.0.1:3000",
-            "http://192.168.0.104:3000"
-        ));
-
-        // allow patterns too for convenience in dev (do not use "*" with credentials in prod)
-        cfg.setAllowedOriginPatterns(List.of(
-            "http://localhost:3000",
-            "http://127.0.0.1:3000",
-            "http://192.168.*:3000"
-        ));
-
+        // allow localhost and LAN IP where Vite runs
+        cfg.setAllowedOriginPatterns(List.of("http://localhost:3000", "http://127.0.0.1:3000", "http://192.168.0.104:3000", "*"));
         cfg.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS","PATCH"));
         cfg.setAllowedHeaders(List.of("*"));
         cfg.setAllowCredentials(true);
         cfg.setExposedHeaders(List.of("Authorization", "Content-Disposition"));
-
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", cfg);
         return source;

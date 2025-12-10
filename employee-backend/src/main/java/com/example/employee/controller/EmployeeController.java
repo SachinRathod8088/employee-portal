@@ -2,36 +2,46 @@ package com.example.employee.controller;
 
 import com.example.employee.model.Employee;
 import com.example.employee.repository.EmployeeRepository;
-
+import com.example.employee.repository.ActivityRepository;
+import com.example.employee.model.ActivityLog;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/employees")
 public class EmployeeController {
-    private final EmployeeRepository empRepo;
 
-    public EmployeeController(EmployeeRepository empRepo) {
+    private final EmployeeRepository empRepo;
+    private final ActivityRepository activityRepo;
+
+    public EmployeeController(EmployeeRepository empRepo, ActivityRepository activityRepo) {
         this.empRepo = empRepo;
+        this.activityRepo = activityRepo;
     }
 
     @GetMapping
     public ResponseEntity<?> list(@RequestParam(defaultValue = "0") int page,
-                                  @RequestParam(defaultValue = "50") int size,
+                                  @RequestParam(defaultValue = "10") int size,
                                   @RequestParam(defaultValue = "") String q) {
-        // simple pageable implementation: search by first/last/email if q provided
-        Pageable pageable = PageRequest.of(page, size);
-        if (q != null && !q.isBlank()) {
-            Page<Employee> p = empRepo.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCaseOrEmailContainingIgnoreCaseAndIsDeletedFalse(
-                    q, q, q, pageable);
+
+        List<Employee> all;
+        if (q == null || q.isBlank()) {
+            Page<Employee> p = empRepo.findAll(PageRequest.of(page, size));
             return ResponseEntity.ok(p);
         } else {
-            Page<Employee> p = empRepo.findByIsDeletedFalse(pageable);
+            all = empRepo.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCaseOrEmailContainingIgnoreCase(
+                    q, q, q
+            );
+            int from = page * size;
+            int to = Math.min(from + size, all.size());
+            List<Employee> sub = from > all.size() ? List.of() : all.subList(from, to);
+            Page<Employee> p = new PageImpl<>(sub, PageRequest.of(page, size), all.size());
             return ResponseEntity.ok(p);
         }
     }
@@ -39,16 +49,20 @@ public class EmployeeController {
     @GetMapping("/{id}")
     public ResponseEntity<?> get(@PathVariable Long id) {
         return empRepo.findById(id)
-                .filter(e -> e.getIsDeleted() == null || !e.getIsDeleted())
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
     public ResponseEntity<?> create(@RequestBody Employee employee) {
-        employee.setCreatedAt(java.time.Instant.now());
-        employee.setUpdatedAt(java.time.Instant.now());
+        employee.setEmployeeId(null);
+        employee.setCreatedAt(Instant.now());
+        employee.setUpdatedAt(Instant.now());
+        if (employee.getEmployeeCode() == null || employee.getEmployeeCode().isBlank()) {
+            employee.setEmployeeCode("EMP" + (System.currentTimeMillis() % 1000000));
+        }
         Employee saved = empRepo.save(employee);
+        logActivity("Employee created", "Created employee " + saved.getFirstName() + " " + saved.getLastName());
         return ResponseEntity.ok(saved);
     }
 
@@ -60,8 +74,10 @@ public class EmployeeController {
             e.setEmail(updated.getEmail());
             e.setPhone(updated.getPhone());
             e.setStatus(updated.getStatus());
-            e.setUpdatedAt(java.time.Instant.now());
+            e.setEmployeeCode(updated.getEmployeeCode());
+            e.setUpdatedAt(Instant.now());
             empRepo.save(e);
+            logActivity("Employee updated", "Updated employee " + e.getFirstName() + " " + e.getLastName());
             return ResponseEntity.ok(e);
         }).orElse(ResponseEntity.notFound().build());
     }
@@ -69,10 +85,17 @@ public class EmployeeController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable Long id) {
         return empRepo.findById(id).map(e -> {
-            e.setIsDeleted(true);
-            e.setUpdatedAt(java.time.Instant.now());
-            empRepo.save(e);
+            empRepo.delete(e);
+            logActivity("Employee deleted", "Deleted employee " + e.getFirstName() + " " + e.getLastName());
             return ResponseEntity.noContent().build();
         }).orElse(ResponseEntity.notFound().build());
+    }
+
+    private void logActivity(String title, String desc) {
+        ActivityLog a = new ActivityLog();
+        a.setTitle(title);
+        a.setDescription(desc);
+        a.setCreatedAt(Instant.now());
+        activityRepo.save(a);
     }
 }

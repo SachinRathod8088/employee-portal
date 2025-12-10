@@ -6,12 +6,13 @@ import java.time.Instant;
 @Entity
 @Table(name = "skill_master")
 public class Skill {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "skill_id")
     private Long skillId;
 
-    @Column(name = "skill_name", unique = true)
+    @Column(name = "skill_name", nullable = false, unique = true)
     private String skillName;
 
     @Column(name = "skill_category")
@@ -25,8 +26,6 @@ public class Skill {
 
     @Column(name = "updated_at")
     private Instant updatedAt;
-
-    // getters & setters
 
     public Long getSkillId() { return skillId; }
     public void setSkillId(Long skillId) { this.skillId = skillId; }

@@ -28,10 +28,7 @@ public class JwtUserDetailsService implements UserDetailsService {
         EmployeeLogin login = loginRepo.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
-        String role = login.getRole() == null ? "USER" : login.getRole();
-        GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role.toUpperCase());
-
-        List<GrantedAuthority> authorities = List.of(authority);
+        List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
 
         return User.builder()
                 .username(login.getUsername())

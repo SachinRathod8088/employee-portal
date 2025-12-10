@@ -1,21 +1,22 @@
 package com.example.employee.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDate;
 import java.time.Instant;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "project_master")
 public class Project {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "project_id")
     private Long projectId;
 
-    @Column(name = "project_code", unique = true)
+    @Column(name = "project_code")
     private String projectCode;
 
-    @Column(name = "project_name")
+    @Column(name = "project_name", nullable = false)
     private String projectName;
 
     @Column(name = "client_name")
@@ -28,15 +29,13 @@ public class Project {
     private LocalDate endDate;
 
     @Column(name = "status")
-    private String status;
+    private String status; // uses project_status_enum in DB, store as string
 
     @Column(name = "created_at")
     private Instant createdAt;
 
     @Column(name = "updated_at")
     private Instant updatedAt;
-
-    // getters & setters
 
     public Long getProjectId() { return projectId; }
     public void setProjectId(Long projectId) { this.projectId = projectId; }

@@ -1,42 +1,55 @@
 package com.example.employee.service;
 
+import com.example.employee.model.EmployeeSalary;
 import com.example.employee.model.PayrollRun;
+import com.example.employee.repository.EmployeeSalaryRepository;
 import com.example.employee.repository.PayrollRunRepository;
-import com.example.employee.repository.EmployeeRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.UUID;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
 
 @Service
 public class PayrollService {
-    private final PayrollRunRepository payrollRepo;
-    private final EmployeeRepository employeeRepo;
 
-    public PayrollService(PayrollRunRepository payrollRepo, EmployeeRepository employeeRepo) {
-        this.payrollRepo = payrollRepo;
-        this.employeeRepo = employeeRepo;
+    private final EmployeeSalaryRepository salaryRepo;
+    private final PayrollRunRepository runRepo;
+
+    public PayrollService(EmployeeSalaryRepository salaryRepo,
+                          PayrollRunRepository runRepo) {
+        this.salaryRepo = salaryRepo;
+        this.runRepo = runRepo;
     }
 
-    /**
-     * Generate a simple payroll run:
-     * - For demo: counts employees & uses placeholder amount (employees * 1000)
-     * - Stores a PayrollRun record
-     */
-    public PayrollRun generatePayrollRun() {
-        long employees = employeeRepo.count();
+    @Transactional
+    public PayrollRun generatePayroll(Long employeeId, LocalDate from, LocalDate to) {
+        List<EmployeeSalary> salaries = salaryRepo.findByEmployeeIdOrderByEffectiveFromDesc(employeeId);
+        if (salaries.isEmpty()) {
+            throw new RuntimeException("No salary record for employee " + employeeId);
+        }
 
-        // placeholder totalPaid calculation (replace with real logic later)
-        BigDecimal perEmployee = BigDecimal.valueOf(1000.00);
-        BigDecimal totalPaid = perEmployee.multiply(BigDecimal.valueOf(employees));
+        EmployeeSalary current = salaries.get(0);
+        BigDecimal paid = current.getNetSalary() != null ? current.getNetSalary() : BigDecimal.ZERO;
 
         PayrollRun run = new PayrollRun();
-        run.setRunReference("PR-" + UUID.randomUUID().toString().substring(0,8));
-        run.setTotalEmployees((int) employees);
-        run.setTotalPaid(totalPaid);
-        return payrollRepo.save(run);
+        run.setEmployeeId(employeeId);
+        run.setPeriodStart(from);
+        run.setPeriodEnd(to);
+        run.setTotalPaid(paid);
+
+        return runRepo.save(run);
     }
 
-    public List<PayrollRun> listRuns() { return payrollRepo.findAll(); }
+    public List<PayrollRun> listRuns(Long employeeId) {
+        if (employeeId != null) {
+            return runRepo.findByEmployeeIdOrderByCreatedAtDesc(employeeId);
+        }
+        return runRepo.findAll();
+    }
+
+    public void deleteRun(Long runId) {
+        runRepo.deleteById(runId);
+    }
 }

@@ -1,45 +1,45 @@
 package com.example.employee.model;
 
 import jakarta.persistence.*;
-import java.time.Instant;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "payroll_run")
 public class PayrollRun {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "payroll_id")
-    private Long payrollId;
+    @Column(name = "run_id")
+    private Long runId;
 
-    @Column(name = "run_reference", unique = true)
-    private String runReference;
+    @Column(name = "employee_id", nullable = false)
+    private Long employeeId;
 
-    @Column(name = "run_date")
-    private Instant runDate = Instant.now();
+    @Column(name = "period_start")
+    private LocalDate periodStart;
 
-    @Column(name = "total_employees")
-    private Integer totalEmployees = 0;
+    @Column(name = "period_end")
+    private LocalDate periodEnd;
 
-    // Use BigDecimal to match NUMERIC in DB
-    @Column(name = "total_paid", precision = 14, scale = 2)
-    private BigDecimal totalPaid = BigDecimal.ZERO;
+    @Column(name = "total_paid")
+    private BigDecimal totalPaid;
 
     @Column(name = "created_at")
     private Instant createdAt = Instant.now();
 
-    // getters/setters
-    public Long getPayrollId() { return payrollId; }
-    public void setPayrollId(Long payrollId) { this.payrollId = payrollId; }
+    public Long getRunId() { return runId; }
+    public void setRunId(Long runId) { this.runId = runId; }
 
-    public String getRunReference() { return runReference; }
-    public void setRunReference(String runReference) { this.runReference = runReference; }
+    public Long getEmployeeId() { return employeeId; }
+    public void setEmployeeId(Long employeeId) { this.employeeId = employeeId; }
 
-    public Instant getRunDate() { return runDate; }
-    public void setRunDate(Instant runDate) { this.runDate = runDate; }
+    public LocalDate getPeriodStart() { return periodStart; }
+    public void setPeriodStart(LocalDate periodStart) { this.periodStart = periodStart; }
 
-    public Integer getTotalEmployees() { return totalEmployees; }
-    public void setTotalEmployees(Integer totalEmployees) { this.totalEmployees = totalEmployees; }
+    public LocalDate getPeriodEnd() { return periodEnd; }
+    public void setPeriodEnd(LocalDate periodEnd) { this.periodEnd = periodEnd; }
 
     public BigDecimal getTotalPaid() { return totalPaid; }
     public void setTotalPaid(BigDecimal totalPaid) { this.totalPaid = totalPaid; }
